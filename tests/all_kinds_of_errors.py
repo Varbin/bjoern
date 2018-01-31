@@ -1,8 +1,19 @@
 #!/usr/bin/env python
+"""
+This tests against all type of errors in bjoern.
+
+Example:
+    - Invalid response headers
+    - Invalid response type
+     - Non-iterable
+     - Iterable return string with Py-3
+"""
 from _background_server import BackgroundBjoern
 
 import sys
 import traceback
+
+
 
 try:
     from http import client as httplib
@@ -10,7 +21,7 @@ except ImportError:  # Py 2
     import httplib
 
 def valid(environ, start_response):
-    start_response('200 ok', [('Header', 'Value')])
+    start_response('200 ok', [('Header', 'value')])
     return [b'yo']
 
 
@@ -20,7 +31,10 @@ def test_valid():
         h.request("GET", "/")
         response = h.getresponse()
         assert response.status == 200
+        assert response.reason == 'ok'
+        assert response.getheader('Header') == 'value'
         assert response.read() == b'yo'
+
 
 def invalid_header_type(environ, start_response):
     start_response('200 ok', None)
@@ -34,6 +48,7 @@ def test_invalid_header_type():
         assert response.status == 500
         assert response.read() != b'yo'
 
+
 def invalid_header_tuple1(environ, start_response):
     start_response('200 ok', [()])
     return [b'yo']
@@ -45,6 +60,7 @@ def test_invalid_header_tuple1():
         response = h.getresponse()
         assert response.status == 500
         assert response.read() != b'yo'
+
 
 def invalid_header_tuple2(environ, start_response):
     start_response('200 ok', [('a', 'b', 'c')])
@@ -58,6 +74,7 @@ def test_invalid_header_tuple2():
         assert response.status == 500
         assert response.read() != b'yo'
 
+
 def invalid_header_tuple3(environ, start_response):
     start_response('200 ok', [('a',)])
     return [b'yo']
@@ -69,6 +86,7 @@ def test_invalid_header_tuple3():
         response = h.getresponse()
         assert response.status == 500
         assert response.read() != b'yo'
+
 
 def invalid_header_tuple_item(environ, start_response):
     start_response('200 ok', (object(), object()))
@@ -82,8 +100,9 @@ def test_invalid_header_tuple_item():
         assert response.status == 500
         assert response.read() != b'yo'
 
+
 def invalid_response_type(environ, start_response):
-    start_response('200 ok', [('Header', 'Value')])
+    start_response('200 ok', [('Header', 'value')])
     return None
     
 def test_invalid_response_type():
@@ -92,10 +111,12 @@ def test_invalid_response_type():
         h.request("GET", "/")
         response = h.getresponse()
         assert response.status == 500
+        assert response.getheader('Header') is None
+
 
 def invalid_response_type_py3(environ, start_response):
-    start_response('200 ok', [('Header', 'Value')])
-    return ['yo']
+    start_response('200 ok', [('Header', 'value')])
+    return ['yo']  # Py3: Bytes only!
 
 def test_invalid_response_type_py3():
     with BackgroundBjoern(invalid_response_type_py3, 'localhost', 8000):
@@ -105,8 +126,12 @@ def test_invalid_response_type_py3():
         if sys.version_info[0] == 2:
             assert response.status == 200
             assert response.read() == 'yo'
+            assert response.reason == 'ok'
+            assert response.getheader('Header') == 'value'
         else:
             assert response.status == 500
+            assert response.getheader('Header') is None
+
 
 if __name__ == "__main__":
     import __main__

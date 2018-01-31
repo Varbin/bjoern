@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Simple instance for runnint a simple WSGI app temporarily in the background.
+"""
 
 from multiprocessing import Process
 from time import sleep
@@ -14,7 +17,11 @@ class BackgroundBjoern(object):
     
     Example:
     
-        >>> with BackgroundBjoen(app, 'localhost', 8080):
+        >>> def app(environ, start_response):
+        ...     start_response('200 OK', [('Content-Type', 'text/plain')])
+        ...     [b'Hello World!']
+        ...
+        >>> with BackgroundBjoern(app, 'localhost', 8080):
         ...     requests.get('http://localhost:8080')
         ...
         <Response [200]>
