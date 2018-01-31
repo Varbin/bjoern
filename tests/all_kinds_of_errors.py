@@ -6,7 +6,9 @@ Example:
     - Invalid response headers
     - Invalid response type
      - Non-iterable
-     - Iterable return string with Py-3
+     - Iterable returning string with Py-3
+
+To test that bjoern works a valid wsgi app is tested against bjoern.
 """
 from _background_server import BackgroundBjoern
 
@@ -14,16 +16,15 @@ import sys
 import traceback
 
 
-
 try:
     from http import client as httplib
 except ImportError:  # Py 2
     import httplib
 
+
 def valid(environ, start_response):
     start_response('200 ok', [('Header', 'value')])
     return [b'yo']
-
 
 def test_valid():
     with BackgroundBjoern(valid, 'localhost', 8000):
